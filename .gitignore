@@ -1,0 +1,22 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+
+# Logs
+*.log
+
+# Scrapy-related files
+.scrapy/
+*.egg-info/
+*.dat
+
+
+# IDE and System Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
