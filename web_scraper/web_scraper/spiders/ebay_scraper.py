@@ -28,5 +28,6 @@ class EbaySpider(scrapy.Spider):
         # Yield the scraped data (at least the title is required)
         yield {
             'title': title,
-            'price':price
+            'price':price,
+            
         }

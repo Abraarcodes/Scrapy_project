@@ -3,29 +3,42 @@ import scrapy
 class IndiamartSpider(scrapy.Spider):
     name = 'indiamart'
     allowed_domains = ['indiamart.com']
-    start_urls = ['https://dir.indiamart.com/search.mp?ss=samsung&v=4&mcatid=&catid=&tags=res:RC5|ktp:N0|stype:attr=1|mtp:G|wc:1|qr_nm:gd|cs:8742|com-cf:nl|ptrs:na|mc:11352|cat:57|qry_typ:P|lang:en|flavl:10']
+
+    def __init__(self, search='', *args, **kwargs):
+        super(IndiamartSpider, self).__init__(*args, **kwargs)
+        self.start_urls = [
+            f'https://dir.indiamart.com/search.mp?ss={search}&v=4'
+        ]
+        # Configure logging
+        self.logger.setLevel('DEBUG')  # Ensure debug level logging is enabled
 
     custom_settings = {
-        # 'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        # 'USER_AGENT':'Mozilla/5.0 (com patible; Gogglebot/2.1; +http://www.google.com/bot.html)',
         'FEED_FORMAT': 'json',
         'FEED_URI': 'indiamart_products.json',
     }
 
     def parse(self, response):
         self.logger.info("Parsing Indiamart response...")
+
+        # Get the product links
         product_links = response.css('.cardlinks::attr(href)').getall()[:10]
         self.logger.info(f"Found {len(product_links)} product links.")
 
         for link in product_links:
-            self.logger.info(f"Processing link: {link}")
-            yield scrapy.Request(link, callback=self.parse_product)
+            full_url = response.urljoin(link)  # Convert relative URLs to absolute
+            self.logger.info(f"Processing link: {full_url}")
+            yield scrapy.Request(full_url, callback=self.parse_product)
 
     def parse_product(self, response):
+        # Extracting product details
         title = response.css('h1.bo.center-heading.centerHeadHeight::text').get() or 'No title'
-        price = response.css('span.bo.price-unit::text').get() or 'No price'
+        price = response.css('div.fs18 span.bo.price-unit::text').get() or 'No price'
+
+        # Logging scraped details for debugging
         self.logger.info(f"Scraped product: Title: {title}, Price: {price}")
+
         yield {
-        'title': title,
-        'price': price
-    }
+            'title': title.strip() if title else 'No title',
+            'price': price.strip() if price else 'No price',
+            'url': response.url  # Include the product URL
+        }
