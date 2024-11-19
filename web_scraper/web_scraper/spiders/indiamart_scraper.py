@@ -1,5 +1,5 @@
 import scrapy
-
+import re
 class IndiamartSpider(scrapy.Spider):
     name = 'indiamart'
     allowed_domains = ['indiamart.com']
@@ -21,7 +21,7 @@ class IndiamartSpider(scrapy.Spider):
         self.logger.info("Parsing Indiamart response...")
 
         # Get the product links
-        product_links = response.css('.cardlinks::attr(href)').getall()[:10]
+        product_links = response.css('.cardlinks::attr(href)').getall()
         self.logger.info(f"Found {len(product_links)} product links.")
 
         for link in product_links:
@@ -32,7 +32,11 @@ class IndiamartSpider(scrapy.Spider):
     def parse_product(self, response):
         # Extracting product details
         title = response.css('h1.bo.center-heading.centerHeadHeight::text').get() or 'No title'
-        price = response.css('div.fs18 span.bo.price-unit::text').get() or 'No price'
+        text = response.css(' span.bo.price-unit').get() or 'No price'
+        price = re.search(r'\d[,\d]*', text).group()  # Match digits with optional commas
+
+# Remove commas for clean numeric value
+        price = price.replace(',', '')
 
         # Logging scraped details for debugging
         self.logger.info(f"Scraped product: Title: {title}, Price: {price}")
@@ -42,3 +46,22 @@ class IndiamartSpider(scrapy.Spider):
             'price': price.strip() if price else 'No price',
             'url': response.url  # Include the product URL
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
