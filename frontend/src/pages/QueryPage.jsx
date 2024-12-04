@@ -381,6 +381,7 @@ export default function AdvancedProductSearch() {
                   <tr>
                     <th className="px-4 py-2 border border-gray-300">Title</th>
                     <th className="px-4 py-2 border border-gray-300">Price</th>
+                    <th className="px-4 py-2 border border-gray-300">Rating</th>
                     <th className="px-4 py-2 border border-gray-300">Source</th>
                     <th className="px-4 py-2 border border-gray-300">Link</th>
                   </tr>
@@ -390,6 +391,7 @@ export default function AdvancedProductSearch() {
                     <tr key={index}>
                       <td className="px-4 py-2 border border-gray-300">{product.title}</td>
                       <td className="px-4 py-2 border border-gray-300">{product.price}</td>
+                      <td className="px-4 py-2 border border-gray-300">{product.rating}</td>
                       <td className="px-4 py-2 border border-gray-300">{product.source}</td>
                       <td className="px-4 py-2 border border-gray-300">
                         <a
