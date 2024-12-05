@@ -7,6 +7,7 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from web_scraper.spiders.indiamart_scraper import IndiamartSpider
 from web_scraper.spiders.tradeindia_scraper import TradeIndiaSpider
+from web_scraper.spiders.flipkart_spider import FlipkartSpider
 import os
 import json
 
@@ -21,7 +22,8 @@ logging.basicConfig(level=logging.DEBUG)
 # Store result file names for each spider
 RESULT_FILES = {
     'IndiamartSpider': 'indiamart_products.json',
-    'TradeIndiaSpider': 'tradeindia_products.json'
+    'TradeIndiaSpider': 'tradeindia_products.json',
+    'FlipkartSpider':'flipkart_products.json',
 }
 
 def run_indiamart_spider(search_term):
@@ -42,6 +44,15 @@ def run_tradeindia_spider(search_term):
     process.crawl(TradeIndiaSpider, search=search_term)
     process.start()
 
+def run_flipkart_spider(search_term):
+    logging.info(f"Running FlipkartSpider for search term: {search_term}")
+    settings = get_project_settings()
+    settings.set('FEED_FORMAT', 'jsonlines')  # Ensure correct format
+    settings.set('FEED_URI', 'flipkart_products.json')
+    process = CrawlerProcess(settings)
+    process.crawl(FlipkartSpider, search=search_term)
+    process.start()
+
 def run_crawlers_async(search_term):
     """
     Run spiders concurrently using multiprocessing.
@@ -49,13 +60,16 @@ def run_crawlers_async(search_term):
     # Running the spiders concurrently using multiprocessing
     indiamart_process = multiprocessing.Process(target=run_indiamart_spider, args=(search_term,))
     tradeindia_process = multiprocessing.Process(target=run_tradeindia_spider, args=(search_term,))
+    flipkart_process=multiprocessing.Process(target=run_flipkart_spider, args=(search_term,))
 
     indiamart_process.start()
     tradeindia_process.start()
+    flipkart_process.start()
 
     indiamart_process.join()
     tradeindia_process.join()
-
+    flipkart_process.join()
+    
 @app.route('/scrape', methods=['GET'])
 def scrape():
     """

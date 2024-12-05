@@ -67,12 +67,14 @@ ROBOTSTXT_OBEY = False
 DOWNLOADER_MIDDLEWARES = {
     'scrapy_splash.SplashCookiesMiddleware': 723,
     'scrapy_splash.SplashMiddleware': 725,
-    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810
     # Uncomment these if you want to use fake user agents or proxies with Splash
     # 'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': 400,
     # 'scrapy_fake_useragent.middleware.RetryUserAgentMiddleware': 401,
     # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 300,
     # 'rotating_proxies.middlewares.BanDetectionMiddleware': 301,
+    # 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 1,
+    # 'scrapy_proxies.RandomProxy': 100,
 }
 
 
@@ -128,8 +130,9 @@ SPIDER_MIDDLEWARES = {
     'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
 }
 
-DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
+# DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
+DUPEFILTER_CLASS='scrapy_splash.SplashAwareDupeFilter'
+REQUEST_FINGERPRINTER_IMPLEMENTATION= '2.7' # Use the updated implementation
+
 HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
-
-
 
