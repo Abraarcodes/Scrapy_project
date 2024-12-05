@@ -4,9 +4,9 @@ import axios from 'axios';
 export default function AdvancedProductSearch() {
   const [searchParams, setSearchParams] = useState({
     itemName: '',
-    make: '',
-    model: '',
-    customSearch: '',
+    itemType: '',
+    specificationKey: '',
+    specificationValue: '',
   });
 
   const [data, setData] = useState([]);
@@ -19,48 +19,48 @@ export default function AdvancedProductSearch() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  const searchString = Object.values(searchParams)
+    .filter((value) => value)
+    .join('+');
 
-    const searchString = Object.values(searchParams)
-      .filter((value) => value)
-      .join('+');
+  console.log('Search String:', searchString);
 
-    console.log('Search String:', searchString);
+  setLoading(true);
+  setError(null);
+  setData([]);
 
-    setLoading(true);
-    setError(null);
-    setData([]);
+  try {
+    const response = await axios.get('http://localhost:5000/scrape', {
+      params: { search: searchString },
+    });
 
-    try {
-      const response = await axios.get(`http://localhost:5000/scrape`, {
-        params: { search: searchString },
-      });
+    console.log('Backend Response:', response.data);
 
-      console.log('Backend Response:', response.data);
+    // Initialize combinedData before using it
+    const combinedData = [];
 
-      // Combine results from all spiders
-      const combinedData = [];
-      Object.keys(response.data).forEach((spider) => {
-        combinedData.push(
-          ...response.data[spider].map((item) => ({
-            ...item,
-            source: spider, // Add source info
-          }))
-        );
-      });
+    // Combine results from all spiders
+    Object.keys(response.data).forEach((spider) => {
+      combinedData.push(
+        ...response.data[spider].map((item) => ({
+          ...item,
+          source: spider, // Add source info
+        }))
+      );
+    });
 
-      setData(combinedData);
-    } catch (err) {
-      setError(err.message || 'Error fetching data from the backend');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setData(combinedData);
+  } catch (err) {
+    setError(err.message || 'Error fetching data from the backend');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Sample data for dropdowns
-  const itemNames = ['Laptop', 'Smartphone', 'Tablet', 'Desktop', 'Camera'];
-  const makes = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo'];
-  const models = ['XPS15', 'Model A', 'Model B', 'Model C', 'Model D', 'Model E'];
+  const itemTypes = ['Laptop', 'Smartphone', 'Tablet', 'Desktop', 'Camera'];
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -70,53 +70,66 @@ export default function AdvancedProductSearch() {
         </h1>
         <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            {[
-              { name: 'itemName', label: 'Item Name', options: itemNames },
-              { name: 'make', label: 'Make', options: makes },
-              { name: 'model', label: 'Model', options: models },
-            ].map((field) => (
-              <div key={field.name}>
-                <label
-                  htmlFor={field.name}
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {field.label}
-                </label>
-                <select
-                  id={field.name}
-                  name={field.name}
-                  value={searchParams[field.name]}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                >
-                  <option value="">Select {field.label}</option>
-                  {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-            ))}
+            <div>
+              <label htmlFor="itemName" className="block text-sm font-medium text-gray-700 mb-1">
+                Item Name
+              </label>
+              <input
+                type="text"
+                id="itemName"
+                name="itemName"
+                value={searchParams.itemName}
+                onChange={handleInputChange}
+                placeholder="Enter item name"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="itemType" className="block text-sm font-medium text-gray-700 mb-1">
+                Item Type
+              </label>
+              <select
+                id="itemType"
+                name="itemType"
+                value={searchParams.itemType}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">Select Item Type</option>
+                {itemTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+
           <div className="mb-6">
-            <label
-              htmlFor="customSearch"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Custom Search
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Specification and Value (e.g., RAM=16GB, Processor=i7)
             </label>
-            <input
-              type="text"
-              id="customSearch"
-              name="customSearch"
-              value={searchParams.customSearch}
-              onChange={handleInputChange}
-              placeholder="Enter custom search terms..."
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
+            <div className="flex mb-3">
+              <input
+                type="text"
+                name="specificationKey"
+                value={searchParams.specificationKey}
+                onChange={handleInputChange}
+                placeholder="Specification Name (e.g., RAM)"
+                className="mt-1 block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+              <input
+                type="text"
+                name="specificationValue"
+                value={searchParams.specificationValue}
+                onChange={handleInputChange}
+                placeholder="Specification Value (e.g., 16GB)"
+                className="mt-1 block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
           </div>
+
           <div className="flex justify-center">
             <button
               type="submit"
@@ -153,6 +166,7 @@ export default function AdvancedProductSearch() {
             </button>
           </div>
         </form>
+
         <div className="mt-8 bg-white shadow-md rounded-lg p-8">
           {error && <p className="text-red-500">{error}</p>}
           {data.length > 0 ? (
