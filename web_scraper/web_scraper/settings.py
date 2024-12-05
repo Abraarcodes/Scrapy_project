@@ -11,6 +11,7 @@ BOT_NAME = "web_scraper"
 
 SPIDER_MODULES = ["web_scraper.spiders"]
 NEWSPIDER_MODULE = "web_scraper.spiders"
+SPLASH_URL = 'http://localhost:8050'
 
 
 
@@ -51,14 +52,29 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
+# DOWNLOADER_MIDDLEWARES = {
+#    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware':None,
+#    'scrapy.downloadermiddlewares.retry.RetryMiddleware':None,
+# #    'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware':400,
+# #    'scrapy_fake_useragent.middleware.RetryUserAgentMiddleware':401,
+# #    'rotating_proxies.middlewares.RotatingProxyMiddleware':300,
+# #    'rotating_proxies.middlewares.BanDetectionMiddleware':301
+# }
+
+
+
+
 DOWNLOADER_MIDDLEWARES = {
-   'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware':None,
-   'scrapy.downloadermiddlewares.retry.RetryMiddleware':None,
-#    'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware':400,
-#    'scrapy_fake_useragent.middleware.RetryUserAgentMiddleware':401,
-#    'rotating_proxies.middlewares.RotatingProxyMiddleware':300,
-#    'rotating_proxies.middlewares.BanDetectionMiddleware':301
+    'scrapy_splash.SplashCookiesMiddleware': 723,
+    'scrapy_splash.SplashMiddleware': 725,
+    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+    # Uncomment these if you want to use fake user agents or proxies with Splash
+    # 'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': 400,
+    # 'scrapy_fake_useragent.middleware.RetryUserAgentMiddleware': 401,
+    # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 300,
+    # 'rotating_proxies.middlewares.BanDetectionMiddleware': 301,
 }
+
 
 # ROTATING_PROXY_LIST_PATH='proxies.txt'
 
@@ -103,12 +119,17 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 FEEDS = {
     'products.json': {
-        'format': 'json',
+        'format': 'jsonlines',
         'encoding': 'utf8',
     },
 }
 
+SPIDER_MIDDLEWARES = {
+    'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
+}
 
+DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
+HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
 
 
 
