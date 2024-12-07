@@ -31,36 +31,56 @@ export default function AdvancedProductSearch() {
     setError(null);
     setData([]);
 
-    try {
-      const response = await axios.get(`http://localhost:5000/scrape`, {
-        params: { search: searchString },
-      });
+  //   try {
+  //     const response = await axios.get(`http://localhost:5000/scrape`, {
+  //       params: { search: searchString },
+  //     });
 
-      console.log('Backend Response:', response.data);
+  //     console.log('Backend Response:', response.data);
 
-      // Combine results from all spiders
-      const combinedData = [];
-      Object.keys(response.data).forEach((spider) => {
-        combinedData.push(
-          ...response.data[spider].map((item) => ({
-            ...item,
-            source: spider, // Add source info
-          }))
-        );
-      });
+  //     // Combine results from all spiders
+  //     const combinedData = [];
+  //     Object.keys(response.data).forEach((spider) => {
+  //       combinedData.push(
+  //         ...response.data[spider].map((item) => ({
+  //           ...item,
+  //           source: spider, // Add source info
+  //         }))
+  //       );
+  //     });
 
-      setData(combinedData);
-    } catch (err) {
-      setError(err.message || 'Error fetching data from the backend');
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setData(combinedData);
+  //   } catch (err) {
+  //     setError(err.message || 'Error fetching data from the backend');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  try {
+  const response = await axios.get(`http://localhost:5000/scrape`, {
+    params: { search: searchString },
+  });
+
+  console.log('Backend Response:', response.data);
+
+  // Use the response data directly, since it's already an array
+  const combinedData = response.data.map((item) => ({
+    ...item,
+    source: item.source || 'Unknown', // Optional: Add a default source if not present
+  }));
+
+  setData(combinedData);
+} catch (err) {
+  setError(err.message || 'Error fetching data from the backend');
+} finally {
+  setLoading(false);
+}}
 
   // Sample data for dropdowns
   const itemNames = ['Laptop', 'Smartphone', 'Tablet', 'Desktop', 'Camera'];
-  const makes = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo'];
-  const models = ['XPS15', 'Model A', 'Model B', 'Model C', 'Model D', 'Model E'];
+  const makes = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo','Asus'];
+  const models = ['tuf','XPS15', 'Model A', 'Model B', 'Model C', 'Model D', 'Model E'];
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">

@@ -13,7 +13,7 @@ SPIDER_MODULES = ["web_scraper.spiders"]
 NEWSPIDER_MODULE = "web_scraper.spiders"
 SPLASH_URL = 'http://localhost:8050'
 
-
+# LOG_LEVEL='Info'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "web_scraper (+http://www.yourdomain.com)"
@@ -119,12 +119,12 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 # In settings.py
 
-FEEDS = {
-    'products.json': {
-        'format': 'jsonlines',
-        'encoding': 'utf8',
-    },
-}
+# FEEDS = {
+#     'products.json': {
+#         'format': 'jsonlines',
+#         'encoding': 'utf8',
+#     },
+# }
 
 SPIDER_MIDDLEWARES = {
     'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,

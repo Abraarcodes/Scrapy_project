@@ -21,7 +21,7 @@ class FlipkartSpider(scrapy.Spider):
         self.logger.info("Parsing Flipkart response...")
 
         # Get the product links
-        product_links = response.css('a.CGtC98::attr(href)').getall()
+        product_links = response.css('a.VJA3rP::attr(href)').getall()
         # self.logger.info(f"Found {len(product_links)} product links.")
 
         for link in product_links:
@@ -39,6 +39,7 @@ class FlipkartSpider(scrapy.Spider):
             'title': title.strip() if title else 'No title',
             'price': price,
             'rating': rating.strip() if rating else 'No rating',
+            'source':'Flipkart',
             'url': response.url  # Include the product URL
         }
 
