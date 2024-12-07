@@ -8,6 +8,7 @@ from scrapy.utils.project import get_project_settings
 from web_scraper.spiders.indiamart_scraper import IndiamartSpider
 from web_scraper.spiders.tradeindia_scraper import TradeIndiaSpider
 from web_scraper.spiders.flipkart_spider import FlipkartSpider
+from web_scraper.spiders.industrybuying_spider import IndustrybuyingSpider
 import os
 import json
 
@@ -24,6 +25,7 @@ RESULT_FILES = {
     'IndiamartSpider': 'indiamart_products.json',
     'TradeIndiaSpider': 'tradeindia_products.json',
     'FlipkartSpider':'flipkart_products.json',
+    'IndustrybuyingSpider':'industrybuying_products.json',
 }
 
 def run_indiamart_spider(search_term):
@@ -53,6 +55,15 @@ def run_flipkart_spider(search_term):
     process.crawl(FlipkartSpider, search=search_term)
     process.start()
 
+def run_industrybuying_spider(search_term):
+    logging.info(f"Running IndustryBuyingSpider for search term: {search_term}")
+    settings = get_project_settings()
+    settings.set('FEED_FORMAT', 'jsonlines')  # Ensure correct format
+    settings.set('FEED_URI', 'industrybuying_products.json')
+    process = CrawlerProcess(settings)
+    process.crawl(IndustrybuyingSpider, search=search_term)
+    process.start()
+
 def run_crawlers_async(search_term):
     """
     Run spiders concurrently using multiprocessing.
@@ -61,22 +72,26 @@ def run_crawlers_async(search_term):
     indiamart_process = multiprocessing.Process(target=run_indiamart_spider, args=(search_term,))
     tradeindia_process = multiprocessing.Process(target=run_tradeindia_spider, args=(search_term,))
     flipkart_process=multiprocessing.Process(target=run_flipkart_spider, args=(search_term,))
+    industrybuyingSpider_process=multiprocessing.Process(target=run_industrybuying_spider, args=(search_term,))
 
     indiamart_process.start()
     tradeindia_process.start()
     flipkart_process.start()
+    industrybuyingSpider_process.start()
 
     indiamart_process.join()
     tradeindia_process.join()
     flipkart_process.join()
-    
+    industrybuyingSpider_process.join()
+
+
 @app.route('/scrape', methods=['GET'])
 def scrape():
     """
     Flask route to initiate the scraping process.
     """
     search_term = request.args.get('search', '')
-
+    print("Search term",search_term)
     if not search_term:
         return jsonify({'error': 'No search term provided'}), 400
 

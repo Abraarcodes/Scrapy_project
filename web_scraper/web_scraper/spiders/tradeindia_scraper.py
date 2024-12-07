@@ -20,13 +20,15 @@ class TradeIndiaSpider(scrapy.Spider):
 
     def parse(self, response):
         # Extract product links from the search result page
-        product_links = response.css('div a::attr(href)').getall()[:10]
+        # product_links = response.css('div a::attr(href)').getall()[:10]
+        product_links = response.css('div.imgContainer a::attr(href)').getall()[:10]
+
 
         # Use response.urljoin to make sure links are absolute
         product_links = [response.urljoin(link) for link in product_links]
 
         # Print out the correct product links for debugging
-        self.logger.info(f"Found {len(product_links)} product links on this page: {product_links}")
+        # self.logger.info(f"Found {len(product_links)} product links on this page: {product_links}")
 
         # Follow each product link
         for link in product_links:
@@ -34,9 +36,10 @@ class TradeIndiaSpider(scrapy.Spider):
 
     def parse_product(self, response):
         # Scraping the title and price from the product page
-        title = response.css('h2.sc-3b1eb120-12.fbCxbT.mb-1.card_title.Body3R::text').get() or 'No title'
-        price = response.css('p.sc-3b1eb120-13.bQfzKW.Body3R::text').get() or 'No price'
-        rating=response.css('div.fs13 span.bo.color') or 'No rating'
+        title = response.css('h1.gfjxaV::text').get() or 'No title'
+        price_match = response.css('h2.prPrice::text').re(r'(\d+[\.,]?\d*)')
+        price = price_match[0] if price_match else 'No price'
+        rating=response.css('span.mr-1::text').get() or 'No rating'
         
         # Yield the scraped data
         yield {

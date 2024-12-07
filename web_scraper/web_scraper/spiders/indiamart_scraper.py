@@ -24,11 +24,10 @@ class IndiamartSpider(scrapy.Spider):
 
         # Get the product links
         product_links = response.css('.cardlinks::attr(href)').getall()
-        self.logger.info(f"Found {len(product_links)} product links.")
+        # self.logger.info(f"Found {len(product_links)} product links.")
 
         for link in product_links:
             full_url = response.urljoin(link)  # Convert relative URLs to absolute
-            self.logger.info(f"Processing link: {full_url}")
             yield scrapy.Request(full_url, callback=self.parse_product)
 
     def parse_product(self, response):
@@ -44,7 +43,7 @@ class IndiamartSpider(scrapy.Spider):
         price = price.replace(',', '')
 
         # Logging scraped details for debugging
-        self.logger.info(f"Scraped product: Title: {title}, Price: {price}")
+        # self.logger.info(f"Scraped product: Title: {title}, Price: {price}")
 
         yield {
             'title': title.strip() if title else 'No title',
@@ -52,7 +51,6 @@ class IndiamartSpider(scrapy.Spider):
             'rating':rating.strip(),
             'url': response.url  # Include the product URL
         }
-
 
 
 
