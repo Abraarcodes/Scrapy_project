@@ -1,11 +1,9 @@
-
 import scrapy
 
 class TradeIndiaSpider(scrapy.Spider):
     name = 'tradeindia'
     allowed_domains = ['tradeindia.com']
-    # start_urls = ['https://www.tradeindia.com/search.html?keyword=samsung+galaxy+tab+3']
-    
+
     def __init__(self, search='', *args, **kwargs):
         super(TradeIndiaSpider, self).__init__(*args, **kwargs)
         self.start_urls = [
@@ -13,38 +11,46 @@ class TradeIndiaSpider(scrapy.Spider):
         ]
         # Configure logging
         self.logger.setLevel('DEBUG')
+
     custom_settings = {
         'FEED_FORMAT': 'jsonlines',
         'FEED_URI': 'tradeindia_products.json',
     }
 
     def parse(self, response):
-        # Extract product links from the search result page
-        # product_links = response.css('div a::attr(href)').getall()[:10]
-        product_links = response.css('div.imgContainer a::attr(href)').getall()[:10]
+        # Scraping the title, price, and other data directly from the search result page
+        products = response.css('div.mcatsliderwrapper')
+        for product in products:
+            # Extract title (from the title attribute in the <a> tag)
+            title = product.css('h2::text').get()
 
+            # Extract price (assuming it's inside the <strong> tag)
+            price = product.css('div.price_and_qty p::text').get()
 
-        # Use response.urljoin to make sure links are absolute
-        product_links = [response.urljoin(link) for link in product_links]
+            # Extract link (from the href attribute in the <a> tag)
+            link = product.css('a::attr(href)').get()
 
-        # Print out the correct product links for debugging
-        # self.logger.info(f"Found {len(product_links)} product links on this page: {product_links}")
+            # Ensure the link is a full URL
+            full_link = response.urljoin(link) if link else None
 
-        # Follow each product link
-        for link in product_links:
-            yield scrapy.Request(link, callback=self.parse_product)
+            # Format price
+            formatted_price = self.format_price(price)
 
-    def parse_product(self, response):
-        # Scraping the title and price from the product page
-        title = response.css('h1.gfjxaV::text').get() or 'No title'
-        price_match = response.css('h2.prPrice::text').re(r'(\d+[\.,]?\d*)')
-        price = price_match[0] if price_match else 'No price'
-        rating=response.css('span.mr-1::text').get() or 'No rating'
-        
-        # Yield the scraped data
-        yield {
-            'title': title.strip(),
-            'price': price.strip(),
-            'rating':rating.strip(),
-            'url': response.url  # Include the product URL in the output
-        }
+            # Yield the scraped data directly from the search results page
+            yield {
+                'title': title.strip(),
+                'price': price.strip(),
+                'rating': 'No rating',
+                'url': full_link,  # Include the search result URL
+            }
+
+        # Pagination: follow next page if it exists
+        next_page = response.css('a.next::attr(href)').get()
+        if next_page:
+            yield response.follow(next_page, self.parse)
+
+    def format_price(self, price):
+        # This function can be used to clean and format the price data if needed
+        if price:
+            return price.strip().replace(",", "")
+        return 'No price'

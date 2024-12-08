@@ -31,56 +31,55 @@ export default function AdvancedProductSearch() {
     setError(null);
     setData([]);
 
-  //   try {
-  //     const response = await axios.get(`http://localhost:5000/scrape`, {
-  //       params: { search: searchString },
-  //     });
+    try {
+      const response = await axios.get(`http://localhost:5000/scrape`, {
+        params: { search: searchString },
+      });
 
-  //     console.log('Backend Response:', response.data);
+      console.log('Backend Response:', response.data);
 
-  //     // Combine results from all spiders
-  //     const combinedData = [];
-  //     Object.keys(response.data).forEach((spider) => {
-  //       combinedData.push(
-  //         ...response.data[spider].map((item) => ({
-  //           ...item,
-  //           source: spider, // Add source info
-  //         }))
-  //       );
-  //     });
+      // Use the response data directly, since it's already an array
+      const combinedData = response.data.map((item) => ({
+        ...item,
+        source: item.source || 'Unknown', // Optional: Add a default source if not present
+      }));
 
-  //     setData(combinedData);
-  //   } catch (err) {
-  //     setError(err.message || 'Error fetching data from the backend');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+      setData(combinedData);
+    } catch (err) {
+      setError(err.message || 'Error fetching data from the backend');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  try {
-  const response = await axios.get(`http://localhost:5000/scrape`, {
-    params: { search: searchString },
-  });
+  const handlePurchase = async (product) => {
+    try {
+      console.log('Sending purchase data:', {
+            title: product.title,
+            price: product.price,
+            link: product.url
+        });
+      const response = await axios.post('http://localhost:5000/save-purchase', {
+        title: product.title,
+        price: product.price,
+        link: product.url,
+      });
 
-  console.log('Backend Response:', response.data);
-
-  // Use the response data directly, since it's already an array
-  const combinedData = response.data.map((item) => ({
-    ...item,
-    source: item.source || 'Unknown', // Optional: Add a default source if not present
-  }));
-
-  setData(combinedData);
-} catch (err) {
-  setError(err.message || 'Error fetching data from the backend');
-} finally {
-  setLoading(false);
-}}
+      if (response.data.success) {
+        alert('Product saved for future benchmarking!');
+      } else {
+        alert('Error saving product data.');
+      }
+    } catch (error) {
+      console.error('Error saving purchase:', error);
+      alert('Error saving purchase.');
+    }
+  };
 
   // Sample data for dropdowns
   const itemNames = ['Laptop', 'Smartphone', 'Tablet', 'Desktop', 'Camera'];
-  const makes = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo','Asus'];
-  const models = ['tuf','XPS15', 'Model A', 'Model B', 'Model C', 'Model D', 'Model E'];
+  const makes = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo', 'Asus'];
+  const models = ['tuf', 'XPS15', 'Model A', 'Model B', 'Model C', 'Model D', 'Model E'];
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -90,11 +89,9 @@ export default function AdvancedProductSearch() {
         </h1>
         <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            {[
-              { name: 'itemName', label: 'Item Name', options: itemNames },
+            {[{ name: 'itemName', label: 'Item Name', options: itemNames },
               { name: 'make', label: 'Make', options: makes },
-              { name: 'model', label: 'Model', options: models },
-            ].map((field) => (
+              { name: 'model', label: 'Model', options: models }].map((field) => (
               <div key={field.name}>
                 <label
                   htmlFor={field.name}
@@ -186,6 +183,7 @@ export default function AdvancedProductSearch() {
                     <th className="px-4 py-2 border border-gray-300">Rating</th>
                     <th className="px-4 py-2 border border-gray-300">Source</th>
                     <th className="px-4 py-2 border border-gray-300">Link</th>
+                    <th className="px-4 py-2 border border-gray-300">Purchase</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,13 +195,21 @@ export default function AdvancedProductSearch() {
                       <td className="px-4 py-2 border border-gray-300">{product.source}</td>
                       <td className="px-4 py-2 border border-gray-300">
                         <a
-                          href={product.link}
+                          href={product.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-600 underline"
                         >
                           View
                         </a>
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        <button
+                          onClick={() => handlePurchase(product)}
+                          className="px-4 py-2 bg-green-500 text-white rounded-md"
+                        >
+                          Purchase
+                        </button>
                       </td>
                     </tr>
                   ))}

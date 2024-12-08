@@ -21,7 +21,7 @@ class FlipkartSpider(scrapy.Spider):
         self.logger.info("Parsing Flipkart response...")
 
         # Get the product links
-        product_links = response.css('a.VJA3rP::attr(href)').getall()
+        product_links = response.css('a.CGtC98::attr(href), a.VJA3rP::attr(href)').getall()
         # self.logger.info(f"Found {len(product_links)} product links.")
 
         for link in product_links:

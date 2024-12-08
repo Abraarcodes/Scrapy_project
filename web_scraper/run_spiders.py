@@ -16,7 +16,7 @@ import re
 app = Flask(__name__)
 
 CORS_ALLOWED_ORIGINS = ['http://localhost:5173']  # Replace with your frontend origin
-cors = CORS(app, resources={r'/scrape': {"origins": CORS_ALLOWED_ORIGINS}})
+cors = CORS(app, resources={r'/scrape': {"origins": CORS_ALLOWED_ORIGINS},r'/save-purchase': {"origins": CORS_ALLOWED_ORIGINS}})
 
 # Set up logging for Flask
 logging.basicConfig(level=logging.DEBUG)
@@ -144,10 +144,11 @@ def scrape():
 def combine_and_filter_results(output_file='products.json', search_term=''):
     """
     Combines data from individual spider result files, filters out entries with missing titles or prices,
-    and ensures that titles contain all keywords from the search term. Saves the filtered data into a single JSON file.
+    ensures that titles contain all keywords from the search term.
+    Saves the filtered data into a single JSON file.
     """
     combined_data = []
-
+    
     # Debug: Log the search term
     app.logger.info(f"Raw search term: {search_term}")
 
@@ -167,24 +168,22 @@ def combine_and_filter_results(output_file='products.json', search_term=''):
                             # Load each JSON object
                             data = json.loads(line.strip())
                             title = data.get('title', '').lower()
+                            price_str = data.get('price', '')
 
                             # Debug: Log the title being checked
                             app.logger.info(f"Checking title: {title}")
 
                             # Filter out entries with missing title or price
                             if data.get('title') and data.get('price'):
-                                # Debug: Check and log keyword matching
-                                matching_keywords = []
-                                for kw in search_keywords:
-                                    match = re.search(r'\b' + re.escape(kw) + r'\b', title)
-                                    if match:
-                                        matching_keywords.append(kw)
+                                # Normalize price string to float (assuming price is in ₹)
+                                price = normalize_price(price_str)
 
-                                app.logger.info(f"Matching keywords in title: {matching_keywords}")
+                                # Debug: Check and log the price
+                                app.logger.info(f"Normalized price: {price}")
 
-                                # Check if all search keywords are in the title (as whole words)
+                                # Filter based on search keywords in the title
                                 if all(re.search(r'\b' + re.escape(keyword) + r'\b', title) for keyword in search_keywords):
-                                    app.logger.info(f"Title matches all keywords: {title}")
+                                    # Append the data to the combined list
                                     combined_data.append(data)
                                 else:
                                     app.logger.info(f"Title does not match all keywords: {title}")
@@ -194,6 +193,9 @@ def combine_and_filter_results(output_file='products.json', search_term=''):
                             app.logger.error(f"Error decoding line in {file_name}: {e}")
             except Exception as e:
                 app.logger.error(f"Error reading {file_name}: {e}")
+
+    # Benchmarking - sort by price (low to high)
+    combined_data.sort(key=lambda x: normalize_price(x['price']))
 
     # Save the combined and filtered data to the output file
     try:
@@ -209,7 +211,78 @@ def combine_and_filter_results(output_file='products.json', search_term=''):
     return combined_data
 
 
+def normalize_price(price_str):
+    """
+    Normalizes the price string into a numerical format.
+    Assumes the price string contains a currency symbol and removes non-numeric characters.
+    """
+    # Remove currency symbols and commas (e.g., ₹, $, ,) and convert the price to float
+    price_str = re.sub(r'[^\d.]', '', price_str)
+    
+    try:
+        return float(price_str)
+    except ValueError:
+        return 0.0  # In case of invalid price format, return 0
 
+
+def calculate_average_price(data):
+    """
+    Calculates the average price from the combined data.
+    This function is no longer needed since there's no benchmark price to compare.
+    """
+    total_price = sum(normalize_price(item['price']) for item in data)
+    count = len(data)
+    return total_price / count if count > 0 else 0.0  # Return 0.0 if no valid data
+
+
+PURCHASES_FILE = 'purchases.json'
+
+@app.route('/save-purchase', methods=['POST'])
+def save_purchase():
+    """
+    Flask route to save purchase data sent from the frontend.
+    It appends the new purchase data to the purchases.json file.
+    """
+    try:
+        # Get the JSON data from the POST request
+        data = request.get_json()
+        
+        # Extract product details
+        title = data.get('title')
+        price = data.get('price')
+        link = data.get('link')
+        
+        # Check if all fields are present
+        if not title or not price or not link:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+
+        # Prepare the product data
+        purchase_data = {
+            'title': title,
+            'price': price,
+            'link': link,
+        }
+
+        # Check if the purchases.json file exists, if not, create it
+        if os.path.exists(PURCHASES_FILE):
+            with open(PURCHASES_FILE, 'r') as file:
+                existing_purchases = json.load(file)
+        else:
+            existing_purchases = []
+
+        # Append the new purchase to the existing list
+        existing_purchases.append(purchase_data)
+
+        # Save the updated data back to the JSON file
+        with open(PURCHASES_FILE, 'w') as file:
+            json.dump(existing_purchases, file, indent=4)
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        app.logger.error(f"Error saving purchase: {e}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
+    benchmark_price = None
     app.run(debug=True)

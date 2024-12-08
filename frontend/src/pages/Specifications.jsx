@@ -5,59 +5,81 @@ export default function AdvancedProductSearch() {
   const [searchParams, setSearchParams] = useState({
     itemName: '',
     itemType: '',
-    specificationKey: '',
-    specificationValue: '',
+    specifications: [],
   });
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setSearchParams((prev) => ({ ...prev, [name]: value }));
+  const handleInputChange = (e, index, field) => {
+    const { value } = e.target;
+    const updatedSpecifications = [...searchParams.specifications];
+    updatedSpecifications[index] = {
+      ...updatedSpecifications[index],
+      [field]: value,
+    };
+    setSearchParams((prev) => ({
+      ...prev,
+      specifications: updatedSpecifications,
+    }));
+  };
+
+  const handleAddSpecification = () => {
+    setSearchParams((prev) => ({
+      ...prev,
+      specifications: [...prev.specifications, { key: '', value: '' }],
+    }));
+  };
+
+  const handleRemoveSpecification = (index) => {
+    const updatedSpecifications = searchParams.specifications.filter(
+      (spec, specIndex) => specIndex !== index
+    );
+    setSearchParams((prev) => ({
+      ...prev,
+      specifications: updatedSpecifications,
+    }));
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  const searchString = Object.values(searchParams)
-    .filter((value) => value)
-    .join('+');
+    e.preventDefault();
 
-  console.log('Search String:', searchString);
+    // Start building the search string with itemName and itemType
+    let searchString = `${searchParams.itemName}+${searchParams.itemType}`;
 
-  setLoading(true);
-  setError(null);
-  setData([]);
-
-  try {
-    const response = await axios.get('http://localhost:5000/scrape', {
-      params: { search: searchString },
+    // Flatten specifications and add them to searchString
+    searchParams.specifications.forEach((spec) => {
+      if (spec.key && spec.value) {
+        searchString += `+${spec.key}+${spec.value}`;
+      }
     });
 
-    console.log('Backend Response:', response.data);
+    console.log('Search String:', searchString);
 
-    // Initialize combinedData before using it
-    const combinedData = [];
+    setLoading(true);
+    setError(null);
+    setData([]);
 
-    // Combine results from all spiders
-    Object.keys(response.data).forEach((spider) => {
-      combinedData.push(
-        ...response.data[spider].map((item) => ({
-          ...item,
-          source: spider, // Add source info
-        }))
-      );
-    });
+    try {
+      const response = await axios.get('http://localhost:5000/relaxed-scrape', {
+        params: { search: searchString },
+      });
 
-    setData(combinedData);
-  } catch (err) {
-    setError(err.message || 'Error fetching data from the backend');
-  } finally {
-    setLoading(false);
-  }
-};
+      console.log('Backend Response:', response.data);
 
+      const combinedData = response.data.map((item) => ({
+        ...item,
+        source: item.source || 'Unknown', // Optional: Add a default source if not present
+      }));
+
+      setData(combinedData);
+    } catch (err) {
+      setError(err.message || 'Error fetching data from the backend');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Sample data for dropdowns
   const itemTypes = ['Laptop', 'Smartphone', 'Tablet', 'Desktop', 'Camera'];
@@ -79,7 +101,9 @@ export default function AdvancedProductSearch() {
                 id="itemName"
                 name="itemName"
                 value={searchParams.itemName}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  setSearchParams((prev) => ({ ...prev, itemName: e.target.value }))
+                }
                 placeholder="Enter item name"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
@@ -93,7 +117,9 @@ export default function AdvancedProductSearch() {
                 id="itemType"
                 name="itemType"
                 value={searchParams.itemType}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  setSearchParams((prev) => ({ ...prev, itemType: e.target.value }))
+                }
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               >
                 <option value="">Select Item Type</option>
@@ -108,26 +134,43 @@ export default function AdvancedProductSearch() {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Specification and Value (e.g., RAM=16GB, Processor=i7)
+              Specifications (e.g., RAM=16GB, Processor=i7)
             </label>
-            <div className="flex mb-3">
-              <input
-                type="text"
-                name="specificationKey"
-                value={searchParams.specificationKey}
-                onChange={handleInputChange}
-                placeholder="Specification Name (e.g., RAM)"
-                className="mt-1 block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-              <input
-                type="text"
-                name="specificationValue"
-                value={searchParams.specificationValue}
-                onChange={handleInputChange}
-                placeholder="Specification Value (e.g., 16GB)"
-                className="mt-1 block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
+            {searchParams.specifications.map((spec, index) => (
+              <div key={index} className="flex mb-3">
+                <input
+                  type="text"
+                  name="specificationKey"
+                  value={spec.key}
+                  onChange={(e) => handleInputChange(e, index, 'key')}
+                  placeholder="Specification Name (e.g., RAM)"
+                  className="mt-1 block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+                <input
+                  type="text"
+                  name="specificationValue"
+                  value={spec.value}
+                  onChange={(e) => handleInputChange(e, index, 'value')}
+                  placeholder="Specification Value (e.g., 16GB)"
+                  className="mt-1 block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSpecification(index)}
+                  className="ml-2 text-red-500"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={handleAddSpecification}
+              className="text-indigo-600 hover:text-indigo-800"
+            >
+              Add Specification
+            </button>
           </div>
 
           <div className="flex justify-center">
@@ -191,7 +234,7 @@ export default function AdvancedProductSearch() {
                       <td className="px-4 py-2 border border-gray-300">{product.source}</td>
                       <td className="px-4 py-2 border border-gray-300">
                         <a
-                          href={product.link}
+                          href={product.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-600 underline"
